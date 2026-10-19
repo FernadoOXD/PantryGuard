@@ -20,6 +20,8 @@ import java.util.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -119,7 +121,8 @@ private fun PantryItemRow(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+                        .fillMaxWidth()
+            .background(getExpirationColor(item))
             .padding(16.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
@@ -160,6 +163,13 @@ private fun formatDate(epochMs: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(Date(epochMs))
 }
-
+fun getExpirationColor(item: PantryItem): Color {
+    val now = System.currentTimeMillis()
+    return when {
+        now > item.expirationDate -> Color(0xFFFFCDD2) // expired - light red
+        item.expirationDate - now <= 3 * 24 * 60 * 60 * 1000L -> Color(0xFFFFF9C4) // expiring soon - light yellow
+        else -> Color(0xFFC8E6C9) // safe - light green
+    }
+}
 
 
