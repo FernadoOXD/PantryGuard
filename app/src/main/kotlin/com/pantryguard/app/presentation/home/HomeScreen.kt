@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.navigate
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.pantryguard.app.presentation.navigation.NavDestinations

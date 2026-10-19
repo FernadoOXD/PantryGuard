@@ -5,7 +5,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OpenFoodFactsResponseDto(
-    @SerialName("product") val product: ProductDto?
+    @SerialName("status") val status: Int? = null,
+    @SerialName("status_verbose") val statusVerbose: String? = null,
+    @SerialName("product") val product: ProductDto? = null
 ) {
     @Serializable
     data class ProductDto(

@@ -5,9 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -18,6 +17,13 @@ import coil.compose.rememberAsyncImagePainter
 import com.pantryguard.app.domain.model.PantryItem
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +31,10 @@ fun InventoryScreen(
     viewModel: InventoryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // State for editing expiration date
+    var editingItem by remember { mutableStateOf<PantryItem?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -38,9 +48,11 @@ fun InventoryScreen(
             )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             when (uiState) {
                 is InventoryUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -55,7 +67,10 @@ fun InventoryScreen(
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(items) { item ->
-                                PantryItemRow(item = item)
+                                PantryItemRow(item = item, onDelete = { viewModel.deleteItem(it) }, onEdit = {
+                                    editingItem = it
+                                    showEditDialog = true
+                                })
                                 Divider()
                             }
                         }
@@ -71,15 +86,43 @@ fun InventoryScreen(
             }
         }
     }
+
+    // Edit expiration date dialog
+    if (showEditDialog && editingItem != null) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = editingItem!!.expirationDate)
+        DatePickerDialog(
+            onDismissRequest = { showEditDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { ms ->
+                        val updated = editingItem!!.copy(expirationDate = ms)
+                        viewModel.updateItem(updated)
+                    }
+                    showEditDialog = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Cancel") }
+            },
+            shape = MaterialTheme.shapes.medium
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
 @Composable
-private fun PantryItemRow(item: PantryItem) {
+private fun PantryItemRow(
+    item: PantryItem,
+    onDelete: (PantryItem) -> Unit,
+    onEdit: (PantryItem) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        horizontalArrangement = Arrangement.Start
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         if (!item.imageUrl.isNullOrEmpty()) {
             Image(
@@ -89,7 +132,6 @@ private fun PantryItemRow(item: PantryItem) {
                 modifier = Modifier.size(64.dp)
             )
         } else {
-            // Placeholder image
             Image(
                 painter = painterResource(id = android.R.drawable.ic_menu_report_image),
                 contentDescription = "Placeholder",
@@ -105,6 +147,12 @@ private fun PantryItemRow(item: PantryItem) {
                 style = MaterialTheme.typography.bodySmall
             )
         }
+        IconButton(onClick = { onEdit(item) }) {
+            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Edit Expiration")
+        }
+        IconButton(onClick = { onDelete(item) }) {
+            Icon(imageVector = Icons.Filled.Delete, contentDescription = "Delete Item")
+        }
     }
 }
 
@@ -112,3 +160,6 @@ private fun formatDate(epochMs: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(Date(epochMs))
 }
+
+
+

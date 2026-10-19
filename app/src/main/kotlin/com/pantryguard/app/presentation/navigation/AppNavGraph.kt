@@ -31,4 +31,5 @@ fun AppNavGraph(navController: NavHostController, modifier: Modifier = Modifier)
 sealed class NavDestinations(val route: String) {
     object Scanner : NavDestinations("scanner")
     object Inventory : NavDestinations("inventory")
+    object AddEditItem : NavDestinations("add_edit_item")
 }

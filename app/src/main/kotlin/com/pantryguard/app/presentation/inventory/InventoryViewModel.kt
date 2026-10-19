@@ -3,6 +3,8 @@ package com.pantryguard.app.presentation.inventory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pantryguard.app.domain.usecase.GetInventoryUseCase
+import com.pantryguard.app.domain.usecase.DeletePantryItemUseCase
+import com.pantryguard.app.domain.usecase.UpdatePantryItemUseCase
 import com.pantryguard.app.domain.model.PantryItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +18,13 @@ import javax.inject.Inject
  * ViewModel for the Inventory screen.
  * Exposes a [StateFlow] of [InventoryUiState] that the UI can observe.
  */
+
+
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
-    private val getInventoryUseCase: GetInventoryUseCase
+    private val getInventoryUseCase: GetInventoryUseCase,
+    private val deletePantryItemUseCase: DeletePantryItemUseCase,
+    private val updatePantryItemUseCase: UpdatePantryItemUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<InventoryUiState>(InventoryUiState.Loading)
@@ -48,6 +54,19 @@ class InventoryViewModel @Inject constructor(
                 .collect { items ->
                     _uiState.value = InventoryUiState.Success(items)
                 }
+        }
+    }
+    /** Deletes a pantry item. */
+    fun deleteItem(item: PantryItem) {
+        viewModelScope.launch {
+            deletePantryItemUseCase(item)
+        }
+    }
+
+    /** Updates a pantry item (e.g., after editing expiration date). */
+    fun updateItem(item: PantryItem) {
+        viewModelScope.launch {
+            updatePantryItemUseCase(item)
         }
     }
 }

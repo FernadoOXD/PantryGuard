@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.pantryguard.app.util.ExpiryDateCalculator
 
 /**
  * UI state for the scanner screen.
@@ -42,9 +43,29 @@ class ScannerViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val response = fetchProductByBarcodeUseCase(barcode)
-                val productName = response?.product?.productName ?: "Unknown product"
-                _uiState.value = ScannerUiState.Success(productName)
-                // Here you could auto‑save a default PantryItem or navigate to the add/edit screen.
+                if (response?.status == 1 && response.product != null) {
+                    val productName = response.product.productName ?: "Unknown product"
+                    
+                    // Guardar automáticamente el producto en la base de datos local (Room)
+                    val newItem = com.pantryguard.app.domain.model.PantryItem(
+                        barcode = barcode,
+                        name = productName,
+                        brand = response.product.brands,
+                        category = response.product.categories?.split(",")?.firstOrNull()?.trim() ?: "Pantry",
+                        quantity = 1,
+                        unit = "unit",
+                        // Por defecto expira en 7 días a partir de hoy (00:00:00)
+                        // Set expiration date to today by default; can be edited by user later
+                        expirationDate = System.currentTimeMillis(),
+                        location = com.pantryguard.app.domain.model.PantryLocation.PANTRY,
+                        imageUrl = response.product.imageUrl
+                    )
+                    savePantryItemUseCase(newItem)
+
+                    _uiState.value = ScannerUiState.Success(productName)
+                } else {
+                    _uiState.value = ScannerUiState.Error("Product not found ($barcode)")
+                }
             } catch (e: Exception) {
                 _uiState.value = ScannerUiState.Error(e.localizedMessage ?: "Error fetching product")
             }
